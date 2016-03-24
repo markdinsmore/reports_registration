@@ -1,5 +1,16 @@
-name = Word Count
-description = View stats on the nodes and comments contributed by each user.
-core = 7.x
+; File: reports_registration.info
+; Version 7103
+;    - First version of this file and module
+; Updated 8/7/2015
+; Changes:
+
+
+name = Write 365 Reports and Registration
+description = Extends Write 365 to include Oregon State University classes and OSU students enrolled in those classes. 
 package = Writing Center Tools
-files[] = wordcount.module
+version = 7.x-1.2-dev
+core = 7.x
+
+dependencies[] = writing365
+
+project = "writingcenter"
