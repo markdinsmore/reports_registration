@@ -1,0 +1,198 @@
+<?php
+
+/**
+ * @file
+ * Install, update and uninstall functions for the reports and registration module.
+ */
+
+/**
+ * Implements hook_install().
+ */
+function reports_registration_install() {
+  $roles = reports_registration_default_roles();
+  foreach ($roles as $value) {
+    $role = new stdClass();
+
+    // check to ensure that the role isn't already returned
+    if (!user_role_load_by_name($value)) {
+      $role->name = $value['name'];
+      $role->weight = $value['weight'];
+
+      user_role_save($role);
+    }
+  }
+}
+
+/**
+ * Implements hook_uninstall()
+ */
+
+function reports_registration_uninstall() {
+  // determine the rid for the instructor role
+  $rid = db_query('Select rid from {role} where name = :name', array(':name' => 'instructor'))->fetchField();
+
+  $delete_roles = db_delete('users_roles')
+    ->condition('rid', $rid)
+    ->execute();
+
+  $delete_instructor_role = db_delete('role')
+    ->condition('name', 'instructor')
+    ->execute();
+
+  db_drop_table('OSU_Registration_Instructor_Input');
+  db_drop_table('OSU_Registration_Student_Input');
+  //db_drop_table('OSU_Reports_Registration');
+}
+
+function reports_registration_schema() {
+  $schema = array();
+  /**
+  $schema['OSU_Reports_Registration'] = array(
+    'description' => 'This table contains configuration information used by the Reports and Registration module.',
+    'fields' => array(
+      'currentterm' => array(
+        'description' => 'The current term in OSU Banner format: e.g., 201601.',
+        'type' => 'varchar',
+        'length' => 10,
+        'not null' => TRUE,
+        'default' => '201600',
+      ),
+    ),
+  );
+   **/
+  $schema['OSU_Registration_Instructor_Input'] = array(
+    'description' => 'This table contains course registration information for the classes associated with Write 365.',
+    'fields' => array(
+      'id' => array(
+        'description' => 'Unique auto-incrementing database id',
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'onid' => array(
+        'description' => 'the ONID id for the instructor of the course',
+        'type' => 'varchar',
+        'length' => 15,
+        'not null' => TRUE,
+        'default' => 'onid missing',
+      ),
+      'osuid' => array(
+        'description' => 'the OSU ID number for the instructor',
+        'type' => 'varchar',
+        'length' => 10,
+        'not null' => TRUE,
+        'default' => '93xxxxxxx',
+      ),
+      'instructor_name' => array(
+        'description' => 'The LFM name for the instructor of the course',
+        'type' => 'varchar',
+        'length' => 60,
+        'not null' => TRUE,
+        'default' => 'unknown',
+      ),
+      'crn' => array(
+        'description' => 'The course registration number (not guaranteed to be unique forever, but generally unique for an academic year.',
+        'type' => 'varchar',
+        'length' => 10,
+        'not null' => TRUE,
+        'default' => '000000',
+      ),
+      'course_name' => array(
+        'description' => 'The name of the course with prefix and number, e.g., \'WR 121\'',
+        'type' => 'varchar',
+        'length' => 25,
+        'not null' => TRUE,
+        'default' => 'some course',
+      ),
+      'section_number' => array(
+        'description' => 'The section number of the course, e.g., \'015\'',
+        'type' => 'varchar',
+        'length' => 5,
+        'not null' => TRUE,
+        'default' => '000',
+      ),
+      'term' => array(
+        'description' => 'The term in which the instructor is teaching this course.',
+        'type' => 'varchar',
+        'length' => 10,
+        'not null' => TRUE,
+        'default' => '195601',
+      ),
+    ),
+    'primary key' => array('id'),
+  );
+  $schema['OSU_Registration_Student_Input'] = array(
+    'description' => 'This table contains student registration information for courses associated with Write 365',
+    'fields' => array(
+      'student_id' => array(
+        'description' => 'The student\'s id number',
+        'type' => 'varchar',
+        'length' => 10,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'onid' => array(
+        'description' => 'The ONID user id for the student',
+        'type' => 'varchar',
+        'length' => 15,
+        'not null' => TRUE,
+        'default' => 'onid missing',
+      ),
+      'last_name' => array(
+        'description' => 'Student\'s last name',
+        'type' => 'varchar',
+        'length' => 45,
+        'not null' => TRUE,
+        'default' => 'not found',
+      ),
+      'first_name' => array(
+        'description' => 'Student\'s first name',
+        'type' => 'varchar',
+        'length' => 45,
+        'not null' => TRUE,
+        'default' => 'not found',
+      ),
+      'email' => array(
+        'description' => 'Student\'s official email of record',
+        'type' => 'varchar',
+        'length'=> 60,
+      ),
+      'term' => array(
+        'description' => 'The current term in which the student is enrolled in the Write 365-associated course',
+        'type' => 'varchar',
+        'length' => 10,
+        'not null' => TRUE,
+        'default' => '195601',
+      ),
+      'course' => array(
+        'description' => 'The course the student is enrolled in',
+        'type' => 'varchar',
+        'length' => 15,
+        'not null' => TRUE,
+        'default' => 'some course',
+      ),
+      'instructor_name' => array(
+        'description' => 'name of the instructor teaching the course in LFM format',
+        'type' => 'varchar',
+        'length' => 45,
+        'not null' => TRUE,
+        'default' => 'unknown',
+      ),
+      'crn' => array(
+        'description' => 'The course registration number (not guaranteed to be unique forever, but generally unique for an academic year.',
+        'type' => 'varchar',
+        'length' => 10,
+        'not null' => TRUE,
+        'default' => '000000',
+      ),
+      'section_number' => array(
+        'description' => 'The section number of the course offering',
+        'type' => 'varchar',
+        'length' => 10,
+        'not null' => TRUE,
+        'default' => '0',
+      ),
+    ),
+  );
+  return $schema;
+}
