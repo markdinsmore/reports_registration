@@ -1,0 +1,18 @@
+; File: reports_registration.info
+; Version 7103
+;    - First version of this file and module
+; Updated 8/7/2015
+; Changes:
+
+
+name = Write 365 Reports and Registration
+description = Extends Write 365 to include Oregon State University classes and OSU students enrolled in those classes.
+package = Writing Center Tools
+version = 7.x-1.2-dev
+core = 7.x
+
+dependencies[] = writing365
+
+files[] = reports_registrations.pages.inc
+
+project = "writingcenter"
