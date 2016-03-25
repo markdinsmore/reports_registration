@@ -190,45 +190,17 @@ function adm_course_detail()
   $build .= "<p>CRN: " . $crs_crn ."</p>";
 
   $header = array(
-	array(
-	  'data' => t('Student ID'),
-	  'field' => 'student_id',
-	  'sort' => 'desc'
-	),
-	//array('data' => t('Drupal UID'), 'field' => 'u.uid', 'sort' => 'desc',),
-	array(
-	  'data' => t('ONID'),
-	  'field' => 'onid',
-	  'sort' => 'desc',
-	),
-	array(
-	  'data' => t('Last Name'),
-	  'field' => 'last_name',
-	  'sort' => 'desc',
-	),
-	array('data' => t('First Name'),
-	  'field' => 'first_name',
-	  'sort' => 'desc',
-	),
-	array('data' => t('Email'),
-	  'field' => 'email',
-	  'sort' => 'desc',
-	),
-	array('data' => t('Status'),
-	  'field' => 'registration_status',
-	  'sort' => 'desc',
-	),
+	array('data' => 'Student ID', 'field' => 'student_id', 'sort' => 'desc'),
+	array('data' => 'ONID', 'field' => 'onid', 'sort' => 'desc',),
+	array('data' => 'Last Name', 'field' => 'last_name', 'sort' => 'desc',),
+	array('data' => 'First Name', 'field' => 'first_name', 'sort' => 'desc',),
+	array('data' => 'Email', 'field' => 'email', 'sort' => 'desc',),
+	array('data' => 'Status', 'field' => 'registration_status', 'sort' => 'desc',),
+	//array('data' => 'UID', 'field' => 'uid', 'sort' => 'desc',),
+	//array('data' => 'Name', 'field' => 'name', 'sort' => 'desc',),
   );
 
-  /*    $query_students = "SELECT s.student_id, u.uid, s.onid, s.last_name, s.first_name, s.email, s.registration_status
-						FROM w365prod_OSU_Registration_Student_Input s
-						inner join w365prod_users u on s.onid = u.name
-						WHERE crn=".$crs_crn."
-						AND term=".$term."
-						ORDER BY s.last_name";
-  */
-  $result = db_select('OSU_Registration_Student_Input', 's')->extend('PagerDefault')->limit(10);
-
+  $result = db_select('OSU_Registration_Student_Input', 's')->extend('PagerDefault')->limit(30);
   $result->fields('s', array('student_id','onid','last_name','first_name', 'email', 'registration_status'))
 	->fields('u',array('uid', 'name'))
 	->condition('term', $term)
@@ -239,28 +211,37 @@ function adm_course_detail()
 	->orderByHeader($header); //then use an extender to create the sorted table
 
   $results = $result->execute();
-  var_dump($results);
+
   $rows = array();
-  foreach ($results as $row) { // add the data
+
+  foreach ($results as $row) {
 	$student_id = $row->student_id;
 	$onid = $row->onid;
 	$last_name = $row->last_name;
 	$first_name = $row->first_name;
 	$email = $row->email;
 	$registration_status = $row->registration_status;
+	$uid = $row->uid;
+	$name = $row->name;
 	$form = "<form name=\"courses\" action=\"detail\" method=\"post\">" .
 	  "<input type=\"hidden\" name=\"onid\" value=\"".$student_id."\">" .
 	  "</form>";
-	$rows[$crn]['student_id'] = $student_id;
-	$rows[$crn]['onid'] = $onid;
-	$rows[$crn]['last_name'] = $last_name;
-	$rows[$crn]['first_name'] = $first_name;
-	$rows[$crn]['email'] = $email;
-	$rows[$crn]['registration'] = $registration_status;
+	//echo $student_id, $onid, $last_name, $first_name, $email, $registration_status, $uid, $name . "<br>";
+	$rows[] = array(
+	  "student_id" => $student_id,
+	  "onid" => $onid,
+	  "last_name" => $last_name,
+	  "first_name" => $first_name,
+	  "email" =>$email,
+	  "registration_status" => $registration_status,
+	  //"uid" => $uid,
+	  //"name" => $name,
+	);
   }
-  var_dump($rows);
-  $build .= theme('table', array('header' => $header, 'rows' => $rows, 'attributes' => array('id' => 'sort-table')));
-  //$build .= theme('pager');
+
+  $build .= theme('table', array('header' => $header, 'rows' => $rows));
+  $build .= theme('pager');
+
   return $build;
 }
 
