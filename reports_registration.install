@@ -196,3 +196,12 @@ function reports_registration_schema() {
   );
   return $schema;
 }
+
+/*
+ * hook_update function
+ */
+
+function reports_registration_update_7104(){
+    return t('Rrports_registration module is now updated to version 1.4');
+}
+

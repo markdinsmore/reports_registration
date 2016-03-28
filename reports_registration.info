@@ -1,8 +1,18 @@
 ; File: reports_registration.info
+;
+; Version 7104
+; Updated 3/24/2016 mark
+;   - Updated r_r.info
+;   - Added reports_registration.pages.inc
+;   - Added r_r_update fcn to .install
+;
+;
 ; Version 7103
 ;    - First version of this file and module
 ; Updated 8/7/2015
 ; Changes:
+;
+
 
 
 name = Write 365 Reports and Registration
@@ -12,5 +22,7 @@ version = 7.x-1.2-dev
 core = 7.x
 
 dependencies[] = writing365
+
+files[] = reports_registration.pages.inc
 
 project = "writingcenter"
