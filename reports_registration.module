@@ -127,10 +127,18 @@ function reports_registration_menu()
         'description' => 'Your Write 365 section listing.',
         'page callback' => 'course_detail',
         'access arguments' => array('view instructor reports'),
-        'type' => MENU_NORMAL_ITEM,
+        'type' => MENU_LOCAL_TASK,
         'file' => 'reports_registration.pages.inc',
     );
-    $items['reports_registration/administrator/all_reports'] = array(
+    $items['reports_registration/instructor/student-detail'] = array(
+        'title' => 'Section Report',
+        'description' => 'Your Write 365 section listing.',
+        'page callback' => 'student_detail',
+        'access arguments' => array('view instructor reports'),
+        'type' => MENU_LOCAL_TASK,
+        'file' => 'reports_registration.pages.inc',
+    );
+    $items['reports_registration/administrator/adm_reports'] = array(
       'title' => 'All Sections Report (Admin)',
       'description' => 'Write 365 Course Sections.',
       'page callback' => 'adm_courses_list',
@@ -146,7 +154,7 @@ function reports_registration_menu()
       'type' => MENU_LOCAL_TASK,
       'file' => 'reports_registration.pages.inc',
     );
-    $items['reports_registration/administrator/student-detail'] = array(
+    $items['reports_registration/administrator/adm-student-detail'] = array(
       'title' => 'All Sections Report (Admin)',
       'description' => 'Write 365 student detail.',
       'page callback' => 'adm_student_detail',
