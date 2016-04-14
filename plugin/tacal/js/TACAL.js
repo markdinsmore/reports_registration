@@ -189,11 +189,9 @@ TACAL.prototype.showcurr = function () {
     var cal = this;
     getId(this.id + 'Next').onclick = function () {
         cal.nextMonth();
-        cal.displayVars('onClick Next');
     };
     getId(this.id + 'Prev').onclick = function () {
         cal.previousMonth();
-        cal.displayVars('onClick Prev');
     }
 };
 
@@ -390,7 +388,6 @@ TACAL.prototype.addEvent = function () {
 TACAL.prototype.renderDate = function (date) {
 
     var keys = Object.keys(date);
-    console.log(keys);
     var css = '';
     var id = date.id;
     var innerhtml = date.date;
@@ -486,6 +483,6 @@ TACAL.prototype.displayVars = function (event) {
     console.log(this.calendar);
 
     console.log("* - - Events - - *");
-    console.log(this.events);
+    console.log(this.event);
 
 };

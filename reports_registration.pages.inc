@@ -22,8 +22,11 @@ function course_list()
 
     $courses = db_select('OSU_Registration_Instructor_Input', 'i');
     $courses->fields('i', array('crn', 'instructor_name', 'course_name', 'section_number', 'term'));
+    $courses->fields('s', array('term_description', 'start_date', 'end_date'));
     $courses->addTag('node access');
     $courses->condition('i.onid', $user->name, '=');
+
+    $courses->innerJoin('OSU_Registration_Term_Validation', 's', 's.term_code = i.term');
 
     $table_sort = $courses->extend('TableSort')
         ->orderByHeader($header); //then use an extender to create the sorted table
@@ -37,6 +40,8 @@ function course_list()
         $sectionNumber = $row->section_number;
         $instructorName = $row->instructor_name;
         $term = $row->term;
+        $start = $row->start_date;
+        $end = $row->end_date;
 
         $form = "<form name=\"courses\" action=\"course-detail\" method=\"post\">" .
             "<input type=\"hidden\" name=\"crs_crn\" value=\"" . $crn . "\">" .
@@ -44,6 +49,8 @@ function course_list()
             "<input type=\"hidden\" name=\"crs_section\" value=\"" . $sectionNumber . "\">" .
             "<input type=\"hidden\" name=\"crs_instructor\" value=\"" . $instructorName . "\">" .
             "<input type=\"hidden\" name=\"crs_term\" value=\"$term\">" .
+            "<input type=\"hidden\" name=\"start_date\" value=\"$start\">" .
+            "<input type=\"hidden\" name=\"end_date\" value=\"$end\">" .
             "<input type=\"submit\" value=\"View " . $crn . "\">" .
             "</form>";
         $rows[$crn]['crn'] = $form;
@@ -71,6 +78,8 @@ function course_detail()
     $crs_section = htmlentities($_POST['crs_section']);
     $crs_instructor = htmlentities($_POST['crs_instructor']);
     $term = htmlentities($_POST['crs_term']);
+    $start = htmlentities($_POST['start_date']);
+    $end = htmlentities($_POST['end_date']);
     $title = $crs_name . "-" . $crs_section . "-" . $crs_crn . "-" . $term . "-" . $crs_instructor . "-" . date('Y-m-d H:i:s');
 
     $build = "<p>Course Detail: " . $title . "</p>";
@@ -115,6 +124,8 @@ function course_detail()
             "<input type=\"hidden\" name=\"student_id\" value=\"" . $student_id . "\">" .
             "<input type=\"hidden\" name=\"uid\" value=\"" . $uid . "\">" .
             "<input type=\"hidden\" name=\"crs_term\" value=\"$term\">" .
+            "<input type=\"hidden\" name=\"start_date\" value=\"$start\">" .
+            "<input type=\"hidden\" name=\"end_date\" value=\"$end\">" .
             "<input type=\"submit\" value=\"View " . $student_id . "\">" .
             "</form>";
         //echo $student_id, $onid, $last_name, $first_name, $email, $registration_status, $uid, $name . "<br>";
@@ -146,16 +157,84 @@ function student_detail()
     $term = htmlentities($_POST['crs_term']);
     $student_id = htmlentities($_POST['student_id']);
     $uid = htmlentities($_POST['uid']);
+    $start = htmlentities($_POST['start_date']);
+    $end = htmlentities($_POST['end_date']);
+
+    // Converting DateTime to UnixTime
+    $start = new DateTime($start);
+    $start = $start->getTimestamp();
+    $end = new DateTime($end);
+    $end = $end->getTimestamp();
 
     $build = "<p>Student Detail Student ID: " . $student_id . "</p>";
     $build .= "<p>Term: " . $term . "</p>";
     $build .= "<p>UID: " . $uid . "</p>";
 
 
-   
+    // Selecting post for students
+    $result = db_select('node', 'n');
+
+    $result->fields('n', array('nid', 'title', 'type'))
+        ->fields('w', array('is_wordsalad', 'percent', 'score'))
+        ->fields('wc', array('wordcount', 'timewriting', 'wordsperminute'))
+        ->condition('type', 'writing365')
+        ->condition('status', 1)
+        ->condition('uid', $uid)
+        ->condition('created',  array($start, $end),'BETWEEN')
+        ->addTag('node_access')
+        ->addField('n', 'created', 'date');
+
+    $result->join('wordsalad_score', 'w', 'w.nid = n.nid');
+    $result->join('W365_JournalNodeData', 'wc', 'wc.nid = n.nid');
+
+
+    // Execute the query
+    
+    $studentPosts = $result->execute()->fetchAll();
+    foreach($studentPosts as $key => $post){
+        if(property_exists($post, 'date')){
+            $studentPosts[$key]->date = format_date($post->date);
+        };
+    }
+
+    // Tacal resources
+    drupal_add_css(drupal_get_path('module', 'reports_registration') . '/plugin/tacal/css/TACAL.css', 'file');
+    drupal_add_js(drupal_get_path('module', 'reports_registration') . '/plugin/tacal/js/jquery.js', 'file');
+    drupal_add_js(drupal_get_path('module', 'reports_registration') . '/plugin/tacal/js/TACAL.js', 'file');
+
+    
+    // Custom js
+    drupal_add_js(drupal_get_path('module', 'reports_registration') . '/js/render-calendar.js', 'file');
+    drupal_add_js(array('reportsregistration' => array('studentid' => $uid, 'studentpost' => json_encode($studentPosts), 'start' => gmdate("Y-m-d",$start), 'end' => gmdate("Y-m-d",$end))), array('type' => 'setting'));
+
+    $build .= '<div id="' . $uid.'"></div>';
+
 
     return $build;
 
+}
+
+function format_date($date){
+    // January = 0 not 1
+    $day = date('d',$date);
+    $month = date('m', $date);
+    $year = date('Y', $date);
+
+    // Puts months in javasript date format
+    // January = 0 != 1
+    if($month - 1 < 0){
+        $month = 11;
+    }
+    else{
+        $month--;
+    }
+
+    // Add a 0 for months less then 10
+    if($month < 10){
+        $month = '0'.$month;
+    }
+
+    return $year . '-'. $month . '-' . $day;
 }
 
 
