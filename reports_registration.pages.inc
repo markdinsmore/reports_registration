@@ -128,7 +128,6 @@ function course_detail()
             "<input type=\"hidden\" name=\"end_date\" value=\"$end\">" .
             "<input type=\"submit\" value=\"View " . $student_id . "\">" .
             "</form>";
-        //echo $student_id, $onid, $last_name, $first_name, $email, $registration_status, $uid, $name . "<br>";
         $rows[] = array(
             "student_id" => $form,
             "onid" => $onid,
@@ -146,6 +145,7 @@ function course_detail()
 
     return $build;
 }
+
 function student_detail()
 {
     /*
@@ -193,7 +193,28 @@ function student_detail()
     $studentPosts = $result->execute()->fetchAll();
     foreach($studentPosts as $key => $post){
         if(property_exists($post, 'date')){
-            $studentPosts[$key]->date = format_date($post->date);
+
+                // January = 0 not 1
+                $day = date('d',$post->date);
+                $month = date('m', $post->date);
+                $year = date('Y', $post->date);
+
+                // Puts months in javasript date format
+                // January = 0 != 1
+                if($month - 1 < 0){
+                    $month = 11;
+                }
+                else{
+                    $month--;
+                }
+
+                // Add a 0 for months less then 10
+                if($month < 10){
+                    $month = '0'. $month;
+                }
+
+            $studentPosts[$key]->date = $year . '-'. $month . '-' . $day;
+
         };
     }
 
@@ -205,7 +226,7 @@ function student_detail()
     
     // Custom js
     drupal_add_js(drupal_get_path('module', 'reports_registration') . '/js/render-calendar.js', 'file');
-    drupal_add_js(array('reportsregistration' => array('studentid' => $uid, 'studentpost' => json_encode($studentPosts), 'start' => gmdate("Y-m-d",$start), 'end' => gmdate("Y-m-d",$end))), array('type' => 'setting'));
+    drupal_add_js(array('reportsregistration' => array('studentid' => $uid, 'studentpost' => json_encode($studentPosts))), array('type' => 'setting'));
 
     $build .= '<div id="' . $uid.'"></div>';
 
@@ -214,28 +235,7 @@ function student_detail()
 
 }
 
-function format_date($date){
-    // January = 0 not 1
-    $day = date('d',$date);
-    $month = date('m', $date);
-    $year = date('Y', $date);
 
-    // Puts months in javasript date format
-    // January = 0 != 1
-    if($month - 1 < 0){
-        $month = 11;
-    }
-    else{
-        $month--;
-    }
-
-    // Add a 0 for months less then 10
-    if($month < 10){
-        $month = '0'.$month;
-    }
-
-    return $year . '-'. $month . '-' . $day;
-}
 
 
 /**
@@ -349,7 +349,6 @@ function adm_course_detail()
             "<input type=\"hidden\" name=\"crs_term\" value=\"$term\">" .
             "<input type=\"submit\" value=\"View " . $student_id . "\">" .
             "</form>";
-        //echo $student_id, $onid, $last_name, $first_name, $email, $registration_status, $uid, $name . "<br>";
         $rows[] = array(
             "student_id" => $form,
             "onid" => $onid,
@@ -447,3 +446,4 @@ function adm_student_detail()
     return $build;
 
 }
+

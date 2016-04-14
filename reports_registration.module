@@ -138,7 +138,7 @@ function reports_registration_menu()
         'type' => MENU_LOCAL_TASK,
         'file' => 'reports_registration.pages.inc',
     );
-    $items['reports_registration/administrator/adm_reports'] = array(
+    $items['reports_registration/administrator/adm-reports'] = array(
       'title' => 'All Sections Report (Admin)',
       'description' => 'Write 365 Course Sections.',
       'page callback' => 'adm_courses_list',
@@ -220,3 +220,6 @@ function reports_registration_user_login(&$edit, $account)
     }
     return;
 }
+
+
+
