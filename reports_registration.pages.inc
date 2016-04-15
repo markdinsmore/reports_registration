@@ -34,30 +34,24 @@ function course_list()
         ->limit(20);    //take the sorted table and extend that with a pager
     $result = $pager->execute(); // execute the result
     $rows[] = array();
+
     foreach ($result as $row) { // add the data
-        $crn = $row->crn;
-        $courseName = $row->course_name;
-        $sectionNumber = $row->section_number;
-        $instructorName = $row->instructor_name;
-        $term = $row->term;
-        $start = $row->start_date;
-        $end = $row->end_date;
 
         $form = "<form name=\"courses\" action=\"course-detail\" method=\"post\">" .
-            "<input type=\"hidden\" name=\"crs_crn\" value=\"" . $crn . "\">" .
-            "<input type=\"hidden\" name=\"crs_name\" value=\"" . $courseName . "\">" .
-            "<input type=\"hidden\" name=\"crs_section\" value=\"" . $sectionNumber . "\">" .
-            "<input type=\"hidden\" name=\"crs_instructor\" value=\"" . $instructorName . "\">" .
-            "<input type=\"hidden\" name=\"crs_term\" value=\"$term\">" .
-            "<input type=\"hidden\" name=\"start_date\" value=\"$start\">" .
-            "<input type=\"hidden\" name=\"end_date\" value=\"$end\">" .
-            "<input type=\"submit\" value=\"View " . $crn . "\">" .
+            "<input type=\"hidden\" name=\"crs_crn\" value=\"" . $row->crn . "\">" .
+            "<input type=\"hidden\" name=\"crs_name\" value=\"" . $row->course_name . "\">" .
+            "<input type=\"hidden\" name=\"crs_section\" value=\"" . $row->section_number . "\">" .
+            "<input type=\"hidden\" name=\"crs_instructor\" value=\"" . $row->instructor_name . "\">" .
+            "<input type=\"hidden\" name=\"crs_term\" value=\"$row->term\">" .
+            "<input type=\"hidden\" name=\"start_date\" value=\"$row->start_date\">" .
+            "<input type=\"hidden\" name=\"end_date\" value=\"$row->end_date\">" .
+            "<input type=\"submit\" value=\"View " . $row->crn . "\">" .
             "</form>";
-        $rows[$crn]['crn'] = $form;
-        $rows[$crn]['instructor_name'] = $row->instructor_name;
-        $rows[$crn]['course_name'] = $row->course_name;
-        $rows[$crn]['section_number'] = $row->section_number;
-        $rows[$crn]['term'] = $row->term;
+        $rows[$row->crn]['crn'] = $form;
+        $rows[$row->crn]['instructor_name'] = $row->instructor_name;
+        $rows[$row->crn]['course_name'] = $row->course_name;
+        $rows[$row->crn]['section_number'] = $row->section_number;
+        $rows[$row->crn]['term'] = $row->term;
     }
 
     $build = "<p>The following are your courses registered with the Write 365 application (across all terms).</p>
@@ -112,31 +106,23 @@ function course_detail()
     $rows = array();
 
     foreach ($results as $row) {
-        $student_id = $row->student_id;
-        $onid = $row->onid;
-        $last_name = $row->last_name;
-        $first_name = $row->first_name;
-        $email = $row->email;
-        $registration_status = $row->registration_status;
-        $uid = $row->uid;
-        $name = $row->name;
+
         $form = "<form name=\"student\" action=\"student-detail\" method=\"post\">" .
-            "<input type=\"hidden\" name=\"student_id\" value=\"" . $student_id . "\">" .
-            "<input type=\"hidden\" name=\"uid\" value=\"" . $uid . "\">" .
+            "<input type=\"hidden\" name=\"student_id\" value=\"" . $row->student_id . "\">" .
+            "<input type=\"hidden\" name=\"uid\" value=\"" . $row->uid . "\">" .
             "<input type=\"hidden\" name=\"crs_term\" value=\"$term\">" .
             "<input type=\"hidden\" name=\"start_date\" value=\"$start\">" .
             "<input type=\"hidden\" name=\"end_date\" value=\"$end\">" .
-            "<input type=\"submit\" value=\"View " . $student_id . "\">" .
+            "<input type=\"submit\" value=\"View " . $row->student_id . "\">" .
             "</form>";
+
         $rows[] = array(
             "student_id" => $form,
-            "onid" => $onid,
-            "last_name" => $last_name,
-            "first_name" => $first_name,
-            "email" => $email,
-            "registration_status" => $registration_status,
-            //"uid" => $uid,
-            //"name" => $name,
+            "onid" => $row->onid,
+            "last_name" => $row->last_name,
+            "first_name" => $row->first_name,
+            "email" => $row->email,
+            "registration_status" => $row->registration_status,
         );
     }
 
@@ -166,9 +152,25 @@ function student_detail()
     $end = new DateTime($end);
     $end = $end->getTimestamp();
 
-    $build = "<p>Student Detail Student ID: " . $student_id . "</p>";
-    $build .= "<p>Term: " . $term . "</p>";
-    $build .= "<p>UID: " . $uid . "</p>";
+    $build = "";
+
+    // Getting student Information
+    $result = db_select('OSU_Registration_Student_Input', 's');
+    $result->fields('s', array('last_name', 'first_name', 'student_id', 'email', 'registration_status', 'onid'))
+        ->condition('student_id', $student_id);
+
+    $studentInfo = $result->execute()->fetchAll();
+    foreach ($studentInfo as $student) {
+        $build .='<h2 class="report-title">Student Information</h2>';
+
+        $build .= '<div class="row-fluid">'
+            . '<div class="span2"><p><strong>Last Name</strong></p><p>' . $student->last_name . '</p></div>'
+            . '<div class="span2"><p><strong>First Name</strong></p><p>' . $student->first_name . '</p></div>'
+            . '<div class="span1"><p><strong>Onid</strong></p><p>' . $student->onid . '</p></div>'
+            . '<div class="span3"><p><strong>Status</strong></p><p>' . $student->registration_status . '</p></div>'
+            . '<div class="span3"><p><strong>Email</strong></p><p>' . $student->email . '</p></div>'
+            . '</div>';
+    }
 
 
     // Selecting post for students
@@ -180,7 +182,7 @@ function student_detail()
         ->condition('type', 'writing365')
         ->condition('status', 1)
         ->condition('uid', $uid)
-        ->condition('created',  array($start, $end),'BETWEEN')
+        ->condition('created', array($start, $end), 'BETWEEN')
         ->addTag('node_access')
         ->addField('n', 'created', 'date');
 
@@ -189,53 +191,67 @@ function student_detail()
 
 
     // Execute the query
-    
     $studentPosts = $result->execute()->fetchAll();
-    foreach($studentPosts as $key => $post){
-        if(property_exists($post, 'date')){
 
-                // January = 0 not 1
-                $day = date('d',$post->date);
-                $month = date('m', $post->date);
-                $year = date('Y', $post->date);
+    // Student Post Stats
+    $wordTotal = 0;
+    $entryTotal = 0;
+    $wordPerEntry = 0;
 
-                // Puts months in javasript date format
-                // January = 0 != 1
-                if($month - 1 < 0){
-                    $month = 11;
-                }
-                else{
-                    $month--;
-                }
+    // Formatting Date
+    foreach ($studentPosts as $key => $post) {
+        if (property_exists($post, 'date')) {
+            // January = 0 not 1
+            $day = date('d', $post->date);
+            $month = date('m', $post->date);
+            $year = date('Y', $post->date);
+            // Puts months in javasript date format
+            // January = 0 != 1
+            if ($month - 1 < 0) {
+                $month = 11;
+            } else {
+                $month--;
+            }
+            // Add a 0 for months less then 10
+            if ($month < 10) {
+                $month = '0' . $month;
+            }
+            $studentPosts[$key]->date = $year . '-' . $month . '-' . $day;
+        }
+        $entryTotal++;
+        $wordTotal += $post->wordcount;
 
-                // Add a 0 for months less then 10
-                if($month < 10){
-                    $month = '0'. $month;
-                }
-
-            $studentPosts[$key]->date = $year . '-'. $month . '-' . $day;
-
-        };
     }
 
-    // Tacal resources
+    $wordPerEntry = round($wordTotal / $entryTotal, 3);
+
+
+    // Displaying Post Statistics
+    $build .='<h2 class="report-title">Student Post Statistics</h2>';
+
+    $build .= '<div class="row-fluid">'
+        . '<div class="span3"><p><strong>Word Total</strong></p><p>' . $wordTotal. '</p></div>'
+        . '<div class="span3"><p><strong>Entries Total</strong></p><p>' . $entryTotal . '</p></div>'
+        . '<div class="span3"><p><strong>Words/Entries</strong></p><p>' . $wordPerEntry . '</p></div>'
+        . '</div>';
+
+
+    // TACAL resources
     drupal_add_css(drupal_get_path('module', 'reports_registration') . '/plugin/tacal/css/TACAL.css', 'file');
     drupal_add_js(drupal_get_path('module', 'reports_registration') . '/plugin/tacal/js/jquery.js', 'file');
     drupal_add_js(drupal_get_path('module', 'reports_registration') . '/plugin/tacal/js/TACAL.js', 'file');
 
-    
+
     // Custom js
     drupal_add_js(drupal_get_path('module', 'reports_registration') . '/js/render-calendar.js', 'file');
     drupal_add_js(array('reportsregistration' => array('studentid' => $uid, 'studentpost' => json_encode($studentPosts))), array('type' => 'setting'));
 
-    $build .= '<div id="' . $uid.'"></div>';
+    $build .= '<div id="' . $uid . '"></div>';
 
 
     return $build;
 
 }
-
-
 
 
 /**
@@ -255,33 +271,35 @@ function adm_courses_list()
 
     $courses = db_select('OSU_Registration_Instructor_Input', 'i');
     $courses->fields('i', array('crn', 'instructor_name', 'course_name', 'section_number', 'term'));
+    $courses->fields('s', array('term_description', 'start_date', 'end_date'));
     $courses->addTag('node access');
+
+    $courses->innerJoin('OSU_Registration_Term_Validation', 's', 's.term_code = i.term');
+
     $table_sort = $courses->extend('TableSort')
         ->orderByHeader($header); //then use an extender to create the sorted table
     $pager = $table_sort->extend('PagerDefault')
         ->limit(20);    //take the sorted table and extend that with a pager
     $result = $pager->execute(); // execute the result
     $rows[] = array();
+
     foreach ($result as $row) { // add the data
-        $crn = $row->crn;
-        $courseName = $row->course_name;
-        $sectionNumber = $row->section_number;
-        $instructorName = $row->instructor_name;
-        $term = $row->term;
-        /*$form = "<form name=\"courses\" action=\"http://tac-dev.nws.oregonstate.edu/W365_reporting/course_report.php\" method=\"post\">" .*/
+
         $form = "<form name=\"courses\" action=\"adm-course-detail\" method=\"post\">" .
-            "<input type=\"hidden\" name=\"crs_crn\" value=\"" . $crn . "\">" .
-            "<input type=\"hidden\" name=\"crs_name\" value=\"" . $courseName . "\">" .
-            "<input type=\"hidden\" name=\"crs_section\" value=\"" . $sectionNumber . "\">" .
-            "<input type=\"hidden\" name=\"crs_instructor\" value=\"" . $instructorName . "\">" .
-            "<input type=\"hidden\" name=\"crs_term\" value=\"$term\">" .
-            "<input type=\"submit\" value=\"View " . $crn . "\">" .
+            "<input type=\"hidden\" name=\"crs_crn\" value=\"" . $row->crn . "\">" .
+            "<input type=\"hidden\" name=\"crs_name\" value=\"" . $row->course_name . "\">" .
+            "<input type=\"hidden\" name=\"crs_section\" value=\"" . $row->section_number . "\">" .
+            "<input type=\"hidden\" name=\"crs_instructor\" value=\"" . $row->instructor_name . "\">" .
+            "<input type=\"hidden\" name=\"crs_term\" value=\"$row->term\">" .
+            "<input type=\"hidden\" name=\"start_date\" value=\"$row->start_date\">" .
+            "<input type=\"hidden\" name=\"end_date\" value=\"$row->end_date\">" .
+            "<input type=\"submit\" value=\"View " . $row->crn . "\">" .
             "</form>";
-        $rows[$crn]['crn'] = $form;
-        $rows[$crn]['instructor_name'] = $row->instructor_name;
-        $rows[$crn]['course_name'] = $row->course_name;
-        $rows[$crn]['section_number'] = $row->section_number;
-        $rows[$crn]['term'] = $row->term;
+        $rows[$row->crn]['crn'] = $form;
+        $rows[$row->crn]['instructor_name'] = $row->instructor_name;
+        $rows[$row->crn]['course_name'] = $row->course_name;
+        $rows[$row->crn]['section_number'] = $row->section_number;
+        $rows[$row->crn]['term'] = $row->term;
     }
 
     $build = "<p>The following are your courses registered with the Write 365 application (across all terms).</p>
@@ -297,12 +315,16 @@ function adm_course_detail()
 {
 
     global $user;
-// First the $_POST vars
+
+    // First the $_POST vars
     $crs_crn = htmlentities($_POST['crs_crn']);
     $crs_name = htmlentities($_POST['crs_name']);
     $crs_section = htmlentities($_POST['crs_section']);
     $crs_instructor = htmlentities($_POST['crs_instructor']);
     $term = htmlentities($_POST['crs_term']);
+    $start = htmlentities($_POST['start_date']);
+    $end = htmlentities($_POST['end_date']);
+
     $title = $crs_name . "-" . $crs_section . "-" . $crs_crn . "-" . $term . "-" . $crs_instructor . "-" . date('Y-m-d H:i:s');
 
     $build = "<p>Course Detail: " . $title . "</p>";
@@ -316,8 +338,6 @@ function adm_course_detail()
         array('data' => 'First Name', 'field' => 'first_name', 'sort' => 'desc',),
         array('data' => 'Email', 'field' => 'email', 'sort' => 'desc',),
         array('data' => 'Status', 'field' => 'registration_status', 'sort' => 'desc',),
-        //array('data' => 'UID', 'field' => 'uid', 'sort' => 'desc',),
-        //array('data' => 'Name', 'field' => 'name', 'sort' => 'desc',),
     );
 
     $result = db_select('OSU_Registration_Student_Input', 's')->extend('PagerDefault')->limit(30);
@@ -335,27 +355,23 @@ function adm_course_detail()
     $rows = array();
 
     foreach ($results as $row) {
-        $student_id = $row->student_id;
-        $onid = $row->onid;
-        $last_name = $row->last_name;
-        $first_name = $row->first_name;
-        $email = $row->email;
-        $registration_status = $row->registration_status;
-        $uid = $row->uid;
-        $name = $row->name;
+
         $form = "<form name=\"student\" action=\"adm-student-detail\" method=\"post\">" .
-            "<input type=\"hidden\" name=\"student_id\" value=\"" . $student_id . "\">" .
-            "<input type=\"hidden\" name=\"uid\" value=\"" . $uid . "\">" .
+            "<input type=\"hidden\" name=\"student_id\" value=\"" . $row->student_id . "\">" .
+            "<input type=\"hidden\" name=\"uid\" value=\"" . $row->uid . "\">" .
             "<input type=\"hidden\" name=\"crs_term\" value=\"$term\">" .
-            "<input type=\"submit\" value=\"View " . $student_id . "\">" .
+            "<input type=\"hidden\" name=\"start_date\" value=\"$start\">" .
+            "<input type=\"hidden\" name=\"end_date\" value=\"$end\">" .
+            "<input type=\"submit\" value=\"View " . $row->student_id . "\">" .
             "</form>";
+
         $rows[] = array(
             "student_id" => $form,
-            "onid" => $onid,
-            "last_name" => $last_name,
-            "first_name" => $first_name,
-            "email" => $email,
-            "registration_status" => $registration_status,
+            "onid" => $row->onid,
+            "last_name" => $row->last_name,
+            "first_name" => $row->first_name,
+            "email" => $row->email,
+            "registration_status" => $row->registration_status,
             //"uid" => $uid,
             //"name" => $name,
         );
