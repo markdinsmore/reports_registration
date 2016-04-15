@@ -25,4 +25,7 @@ dependencies[] = writing365
 
 files[] = reports_registration.pages.inc
 
+stylesheets[all][] = /css/font-awesome.min.css
+stylesheets[all][] = /css/reports-registration.css
+
 project = "writingcenter"
